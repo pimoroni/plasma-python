@@ -48,8 +48,8 @@ sudo pip3 install plasmalights
 To install the Plasma daemon you should clone this repository, navigate to the "daemon" directory and run the installer:
 
 ```
-git clone https://github.com/pimoroni/plasma
-cd plasma/daemon
+git clone https://github.com/pimoroni/plasma-python
+cd plasma-python/daemon
 sudo ./install
 ```
 
