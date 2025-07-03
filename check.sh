@@ -2,12 +2,11 @@
 
 # This script handles some basic QA checks on the source
 
-NOPOST=$1
-cd library
-LIBRARY_NAME=$(hatch project metadata name)
-LIBRARY_VERSION=$(hatch version | awk -F "." '{print $1"."$2"."$3}')
-POST_VERSION=$(hatch version | awk -F "." '{print substr($4,0,length($4))}')
-cd ..
+NOPOST=false
+export LIBRARY_NAME
+LIBRARY_NAME=$(cd library || hatch project metadata name)
+LIBRARY_VERSION=$(cd library || hatch version | awk -F "." '{print $1"."$2"."$3}')
+POST_VERSION=$(cd library || hatch version | awk -F "." '{print substr($4,0,length($4))}')
 TERM=${TERM:="xterm-256color"}
 
 success() {
@@ -74,7 +73,7 @@ if ! git tag -l | grep -E "${LIBRARY_VERSION}$"; then
 fi
 printf "\n"
 
-if [[ $NOPOST ]]; then
+if [ $NOPOST = true ]; then
     inform "Checking for .postN on library version..."
     if [[ "$POST_VERSION" != "" ]]; then
         warning "Found .$POST_VERSION on library version."
