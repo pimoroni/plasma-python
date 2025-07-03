@@ -4,11 +4,12 @@ These allow the mocking of various Python modules
 that might otherwise have runtime side-effects.
 """
 import os
+import pathlib
 import sys
+import tempfile
+
 import mock
 import pytest
-import pathlib
-import tempfile
 
 
 @pytest.fixture(scope='function', autouse=True)

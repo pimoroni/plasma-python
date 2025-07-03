@@ -4,7 +4,6 @@ import time
 
 import RPi.GPIO as GPIO
 
-
 __version__ = '0.0.1'
 
 DAT = 15

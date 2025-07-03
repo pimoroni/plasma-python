@@ -1,6 +1,6 @@
 """Plasma multi device LED driver."""
-import sys
 import pathlib
+import sys
 
 __version__ = '2.0.2'
 

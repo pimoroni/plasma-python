@@ -1,5 +1,6 @@
 """Plasma support for APA102 style pixels."""
 import time
+
 from .core import Plasma
 
 

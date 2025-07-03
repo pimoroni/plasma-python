@@ -3,10 +3,11 @@ import pytest
 
 def test_fx_cycle(argv, GPIO):
     """Test that set_sequence supports the output of a PlasmaFX Sequence"""
-    from plasma import auto
-    from plasma.apa102 import PlasmaAPA102
     from plasmafx import Sequence
     from plasmafx.plugins import FXCycle
+
+    from plasma import auto
+    from plasma.apa102 import PlasmaAPA102
 
     sequence = Sequence(10)
     sequence.set_plugin(0, FXCycle())
