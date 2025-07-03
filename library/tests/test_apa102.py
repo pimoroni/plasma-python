@@ -20,7 +20,7 @@ def test_apa102_set_pixel(GPIO):
     from plasma.apa102 import PlasmaAPA102
     plasma = PlasmaAPA102(10, gpio_data=10, gpio_clock=11)
     plasma.set_pixel(0, 255, 0, 255)
-    
+
     assert plasma.get_pixel(0) == (255, 0, 255, 1.0)
 
 
@@ -29,7 +29,7 @@ def test_apa102_set_all(GPIO):
     from plasma.apa102 import PlasmaAPA102
     plasma = PlasmaAPA102(10, gpio_data=10, gpio_clock=11)
     plasma.set_all(255, 0, 255)
-    
+
     assert plasma.get_pixel(0) == (255, 0, 255, 1.0)
 
 
@@ -39,7 +39,7 @@ def test_apa102_clear(GPIO):
     plasma = PlasmaAPA102(10, gpio_data=10, gpio_clock=11)
     plasma.set_all(255, 0, 255)
     plasma.clear()
-    
+
     assert plasma.get_pixel(0) == (0, 0, 0, 1.0)
 
 
