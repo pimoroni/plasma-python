@@ -1,3 +1,9 @@
+3.0.0
+-----
+
+* Repackage to pyproject
+* Fix GitHub URL to plasma-python
+
 2.0.2
 -----
 

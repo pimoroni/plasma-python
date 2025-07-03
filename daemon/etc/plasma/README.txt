@@ -14,4 +14,4 @@ The width of that PNG file should be:
 
 The height of the PNG file in pixels corresponds to the number of frames in the animation.
 
-Since Plasma is animated at 60fps, a 60 pixel high animation will last for 1 second. 
+Since Plasma is animated at 60fps, a 60 pixel high animation will last for 1 second.
