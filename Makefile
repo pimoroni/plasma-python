@@ -1,5 +1,5 @@
-LIBRARY_NAME := $(shell hatch project metadata name 2> /dev/null)
-LIBRARY_VERSION := $(shell hatch version 2> /dev/null)
+LIBRARY_NAME := $(shell cd library; hatch project metadata name 2> /dev/null)
+LIBRARY_VERSION := $(shell cd library; hatch version 2> /dev/null)
 
 .PHONY: usage install uninstall check pytest qa build-deps check tag wheel sdist clean dist testdeploy deploy
 usage:
@@ -23,7 +23,7 @@ endif
 	@echo "tag:          tag the repository with the current version\n"
 
 version:
-	@hatch version
+	@cd library; hatch version
 
 install:
 	./install.sh --unstable
