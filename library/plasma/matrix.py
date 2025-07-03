@@ -1,5 +1,6 @@
 """Combine multiple LED strip types into a single logical strip."""
 import pathlib
+
 import yaml
 
 

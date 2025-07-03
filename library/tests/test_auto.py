@@ -27,8 +27,8 @@ def test_get_device_from_argv(argv_valid, GPIO):
 
 def test_get_device_from_config(config_file, GPIO, rpi_ws281x, serial):
     from plasma import auto
-    from plasma.matrix import PlasmaMatrix
     from plasma.apa102 import PlasmaAPA102
+    from plasma.matrix import PlasmaMatrix
 
     plasma = auto("XXXXX", config_file)
 
