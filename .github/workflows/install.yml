@@ -30,7 +30,7 @@ jobs:
           mkdir -p boot/firmware
           touch boot/firmware/config.txt
           sed -i "s|/boot/firmware|`pwd`/boot/firmware|g" install.sh
-          sed -i "s|sudo raspi-config|raspi-config|g" pyproject.toml
+          sed -i "s|sudo raspi-config|raspi-config|g" library/pyproject.toml
           touch raspi-config
           chmod +x raspi-config
           echo `pwd` >> $GITHUB_PATH
