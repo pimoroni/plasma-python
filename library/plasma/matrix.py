@@ -82,7 +82,7 @@ class PlasmaMatrix():
         if index in self._devices.keys():
             return self._devices[index].get('device')
 
-        if type(index) == str:
+        if isinstance(index, str):
             for n, d in self._devices.items():
                 if d.get('type') == index:
                     return d.get('device')
