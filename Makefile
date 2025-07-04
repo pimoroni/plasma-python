@@ -54,10 +54,10 @@ tag: version
 	git tag -a "v${LIBRARY_VERSION}" -m "Version ${LIBRARY_VERSION}"
 
 build: check
-	@hatch build
+	@cd library; hatch build
 
 clean:
-	-rm -r dist
+	-rm -r library/dist
 
 testdeploy: build
 	twine upload --repository testpypi library/dist/*
