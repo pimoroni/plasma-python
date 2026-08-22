@@ -159,12 +159,14 @@ def main():
                     plasma.set_all(r, g, b, brightness=args.brightness)
                     last_r, last_g, last_b = r, g, b
                     last_brightness = args.brightness
-                    needs_update = False
+                    needs_update = True
 
+            # Single place that latches the buffer to the LEDs and clears the
+            # dirty flag. Clearing it anywhere else means the set_* calls
+            # silently never reach the hardware.
             if needs_update:
                 plasma.show()
-                if pattern is None:
-                    needs_update = False
+                needs_update = False
 
 
 def load_pattern(pattern_name):
