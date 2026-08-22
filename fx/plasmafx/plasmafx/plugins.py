@@ -1,12 +1,18 @@
 """Plasma: Light FX Sequencer - Built-in plugins."""
 
-import pkg_resources
+import sys
+from importlib.metadata import entry_points
+
 from .core import Plugin
 
+if sys.version_info >= (3, 10):
+    effect_plugins = entry_points(group="plasmafx.effect_plugins")
+else:
+    effect_plugins = entry_points().get("plasmafx.effect_plugins", [])
 
 plasma_fx_plugins = {}
 
-for entry_point in pkg_resources.iter_entry_points("plasmafx.effect_plugins"):
+for entry_point in effect_plugins:
     effect_handle = entry_point.name
     plasma_fx_plugins[effect_handle] = entry_point.load()
     globals()[f"FX{effect_handle}"] = entry_point.load()

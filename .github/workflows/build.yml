@@ -1,4 +1,4 @@
-name: Tests
+name: Build
 
 on:
   pull_request:
@@ -11,13 +11,15 @@ permissions:
 
 jobs:
   test:
-    name: Test (Python ${{ matrix.python }})
+    name: Build (Python ${{ matrix.python }})
     runs-on: ubuntu-latest
-    env:
-      TERM: xterm-256color
     strategy:
       matrix:
         python: ['3.9', '3.10', '3.11', '3.12', '3.13']
+
+    env:
+      TERM: xterm-256color
+      RELEASE_FILE: ${{ github.event.repository.name }}-${{ github.event.release.tag_name || github.sha }}-py${{ matrix.python }}
 
     steps:
       - name: Checkout Code
@@ -29,13 +31,12 @@ jobs:
           enable-cache: true
           python-version: ${{ matrix.python }}
 
-      - name: Run Tests
+      - name: Build Packages
         run: |
-          uv run make pytest
+          uv run make build
 
-      - name: Coverage
-        if: ${{ matrix.python == '3.9' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          uvx coveralls --service=github
+      - name: Upload Packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.RELEASE_FILE }}
+          path: dist/

@@ -1,6 +1,7 @@
 """Plasma: Light FX Sequencer - Colour Cycling Plugin."""
-from plasmafx.core import Plugin
 from colorsys import hsv_to_rgb
+
+from plasmafx.core import Plugin
 
 
 class Cycle(Plugin):

@@ -13,10 +13,10 @@ __pycache__
 *.build
 *.changes
 *.orig.*
-packaging/*tar.xz
-library/debian/
 .coverage
-.tox/
+.pytest_cache
+.tox
+.venv
 .vscode/
-.pytest_cache/
 venv/
+uv.lock

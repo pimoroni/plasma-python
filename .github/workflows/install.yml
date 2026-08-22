@@ -1,4 +1,4 @@
-name: Tests
+name: Install Test
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   test:
-    name: Test (Python ${{ matrix.python }})
+    name: Install (Python ${{ matrix.python }})
     runs-on: ubuntu-latest
     env:
       TERM: xterm-256color
@@ -23,19 +23,17 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v5
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v6
+      - name: Set up Python ${{ matrix.python }}
+        uses: actions/setup-python@v6
         with:
-          enable-cache: true
           python-version: ${{ matrix.python }}
 
-      - name: Run Tests
+      - name: Stub files & Patch install.sh
         run: |
-          uv run make pytest
+          mkdir -p boot/firmware
+          touch boot/firmware/config.txt
+          sed -i "s|/boot/firmware|`pwd`/boot/firmware|g" install.sh
 
-      - name: Coverage
-        if: ${{ matrix.python == '3.9' }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run install.sh
         run: |
-          uvx coveralls --service=github
+          ./install.sh --unstable --force

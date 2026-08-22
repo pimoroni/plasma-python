@@ -12,4 +12,3 @@ devices:
         gpio_pin: 13
         pixels: 25
         offset: 25
-

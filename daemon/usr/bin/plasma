@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 
-import png
-import time
-import signal
+import argparse
 import os
+import signal
 import sys
 import threading
+import time
 from datetime import datetime
-import argparse
+
+import png
 
 # Application Defaults
 CONFIG_FILE = "/etc/plasma/plasma.conf"
@@ -55,7 +56,7 @@ class FIFO():
                     return buf
                 if len(c) == 1:
                     buf += c
-            except BlockingIOError as err:
+            except BlockingIOError:
                 continue
         return None
 

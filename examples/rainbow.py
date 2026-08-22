@@ -5,7 +5,6 @@ import time
 
 from plasma import auto
 
-
 NUM_PIXELS = 10 * 4  # Original Plasma light boards have 4 pixels per light
 
 
