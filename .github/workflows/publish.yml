@@ -1,0 +1,54 @@
+name: Publish
+
+# Trusted publishing, so PyPI trusts this workflow over OIDC and no API token is stored
+# here. Configure it once at pypi.org/manage/project/plasmalights/settings/publishing/ with
+# this repository, this filename and the `pypi` environment.
+#
+# Only plasmalights is published from here. The two fx packages are still built and
+# uploaded by hand via `make deploy`.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build and publish to PyPI
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write # for trusted publishing
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The tag is the version, so the build has to be able to see it. A checkout of a
+          # tag has it at HEAD anyway; this covers a dispatch from a branch as well.
+          fetch-depth: 0
+
+      # setup-uv publishes no floating major tag past v6, only exact versions
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          version: "0.9.2"
+
+      - run: uv build
+
+      # A build that cannot see the tag produces 0.0.0.postN.devN+hash rather than failing,
+      # so what came out is checked against what was asked for. Skipped for a dispatch from
+      # a branch, where the ref is not a version at all.
+      - name: Check the built version is the tag
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          BUILT="$(ls dist/*.whl | head -1 | cut -d- -f2)"
+          echo "tag=$TAG built=$BUILT"
+          if [ "$GITHUB_REF_NAME" != "$TAG" ] && [ "$TAG" != "$BUILT" ]; then
+            echo "::error::built $BUILT from tag $TAG - check whether the checkout could"
+            echo "::error::see the tag at all"
+            exit 1
+          fi
+
+      - name: Publish
+        run: uv publish --trusted-publishing always

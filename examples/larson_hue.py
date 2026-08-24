@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 
+import colorsys
 import math
 import time
-import colorsys
 
 from plasma import auto
-
 
 NUM_PIXELS = 10 * 4
 FALLOFF = 1.9

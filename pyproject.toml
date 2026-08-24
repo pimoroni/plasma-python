@@ -1,0 +1,136 @@
+[build-system]
+requires = ["hatchling", "hatch-fancy-pypi-readme", "uv-dynamic-versioning"]
+build-backend = "hatchling.build"
+
+[project]
+name = "plasmalights"
+dynamic = ["version", "readme"]
+description = "Python library for driving Pimoroni Plasma and other LED devices"
+license = {file = "LICENSE"}
+requires-python = ">= 3.9"
+authors = [
+    { name = "Philip Howard", email = "phil@pimoroni.com" },
+]
+maintainers = [
+    { name = "Philip Howard", email = "phil@pimoroni.com" },
+]
+keywords = [
+    "Pi",
+    "Raspberry",
+    "LED",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Hardware",
+]
+dependencies = [
+    "pyyaml",
+    "pyserial",
+]
+
+[project.urls]
+GitHub = "https://www.github.com/pimoroni/plasma-python"
+Homepage = "https://www.pimoroni.com"
+
+[dependency-groups]
+dev = [
+    "check-manifest",
+    "ruff",
+    "codespell",
+    "pre-commit",
+    "twine",
+    "hatch",
+    "hatch-fancy-pypi-readme",
+    "uv-dynamic-versioning",
+    "tox",
+    "pdoc",
+]
+
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
+
+# check-manifest and any build from an unpacked sdist have no git to read, and the
+# publish workflow checks the built version against the tag to catch the fallback.
+[tool.uv-dynamic-versioning]
+fallback-version = "0.0.0"
+
+[tool.hatch.build]
+include = [
+    "plasma"
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "*"
+]
+exclude = [
+    ".*",
+    "dist",
+    "uv.lock"
+]
+
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+fragments = [
+  { path = "README.md" },
+  { text = "\n" },
+  { path = "CHANGELOG.md" }
+]
+
+[tool.ruff]
+exclude = [
+    '.tox',
+    '.egg',
+    '.git',
+    '__pycache__',
+    'build',
+    'dist'
+]
+line-length = 200
+
+[tool.ruff.lint]
+extend-select = ["I"]
+
+[tool.codespell]
+ignore-words-list = "reenable"
+skip = """
+./.tox,\
+./.venv,\
+./.egg,\
+./.git,\
+./__pycache__,\
+./build,\
+./dist\
+"""
+
+[tool.check-manifest]
+ignore = [
+    'install.sh',
+    'uninstall.sh',
+    'Makefile',
+    'tox.ini',
+    'tests/*',
+    'examples/*',
+    'daemon/*',
+    'documentation/*',
+    'fx/*',
+    '.editorconfig',
+    '.pre-commit-config.yaml'
+]
+
+[tool.pimoroni]
+apt_packages = []
+configtxt = []
+commands = []

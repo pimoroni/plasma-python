@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 
-from plasma import auto
-import plasmafx
-from plasmafx import plugins
 import time
 
+import plasmafx
+from plasmafx import plugins
+
+from plasma import auto
 
 FPS = 60
 PIXEL_COUNT = 10
