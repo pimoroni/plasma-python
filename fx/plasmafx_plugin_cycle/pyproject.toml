@@ -1,0 +1,72 @@
+[build-system]
+requires = ["hatchling", "hatch-fancy-pypi-readme"]
+build-backend = "hatchling.build"
+
+[project]
+name = "plasmafx-plugin-cycle"
+version = "1.0.0"
+dynamic = ["readme"]
+description = "Colour cycle plugin for plasmafx"
+license = {file = "LICENSE.txt"}
+requires-python = ">= 3.9"
+authors = [
+    { name = "Philip Howard", email = "phil@pimoroni.com" },
+]
+maintainers = [
+    { name = "Philip Howard", email = "phil@pimoroni.com" },
+]
+keywords = [
+    "Pi",
+    "Raspberry",
+    "plugin",
+    "effects",
+    "lighting",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: System :: Hardware",
+]
+dependencies = [
+    "plasmafx",
+]
+
+[project.entry-points."plasmafx.effect_plugins"]
+Cycle = "plasmafx_plugin_cycle:Cycle"
+
+[project.urls]
+GitHub = "https://www.github.com/pimoroni/plasma-python"
+Homepage = "https://www.pimoroni.com"
+
+[tool.hatch.build]
+include = [
+    "plasmafx_plugin_cycle"
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "*"
+]
+exclude = [
+    ".*",
+    "dist"
+]
+
+[tool.hatch.metadata.hooks.fancy-pypi-readme]
+content-type = "text/markdown"
+fragments = [
+  { path = "README.md" },
+  { text = "\n" },
+  { path = "CHANGELOG.md" }
+]

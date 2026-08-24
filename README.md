@@ -4,8 +4,8 @@ Plasma is an LED/Light sequencing suite written to harmonise a variety of LED st
 
 Plasma also includes plasmad, a system daemon for sequencing light strips using PNG images to provide animation frames.
 
-[![Build Status](https://shields.io/github/workflow/status/pimoroni/plasma/Python%20Tests.svg)](https://github.com/pimoroni/plasma/actions/workflows/test.yml)
-[![Coverage Status](https://coveralls.io/repos/github/pimoroni/plasma/badge.svg?branch=master)](https://coveralls.io/github/pimoroni/plasma?branch=master)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/pimoroni/plasma-python/test.yml?branch=master)](https://github.com/pimoroni/plasma-python/actions/workflows/test.yml)
+[![Coverage Status](https://coveralls.io/repos/github/pimoroni/plasma-python/badge.svg?branch=master)](https://coveralls.io/github/pimoroni/plasma-python?branch=master)
 [![PyPi Package](https://img.shields.io/pypi/v/plasmalights.svg)](https://pypi.python.org/pypi/plasmalights)
 [![Python Versions](https://img.shields.io/pypi/pyversions/plasmalights.svg)](https://pypi.python.org/pypi/plasmalights)
 
@@ -40,7 +40,7 @@ If you choose to download examples you'll find them in `/home/pi/Pimoroni/plasma
 ### Manual install:
 
 ```bash
-sudo pip3 install plasmalights
+python3 -m pip install plasmalights
 ```
 
 ### Using Plasma Daemon
@@ -48,7 +48,7 @@ sudo pip3 install plasmalights
 To install the Plasma daemon you should clone this repository, navigate to the "daemon" directory and run the installer:
 
 ```
-git clone https://github.com/pimoroni/plasma
+git clone https://github.com/pimoroni/plasma-python
 cd plasma/daemon
 sudo ./install
 ```
@@ -73,10 +73,10 @@ The Plasma daemon installer installs two programs onto your Raspberry Pi. `plasm
 
 ### Development:
 
-If you want to contribute, or like living on the edge of your seat by having the latest code, you should clone this repository, `cd` to the library directory, and run:
+If you want to contribute, or like living on the edge of your seat by having the latest code, you should clone this repository and run:
 
 ```bash
-sudo python3 setup.py install
+./install.sh --unstable
 ```
 
 ## Documentation & Support
