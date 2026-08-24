@@ -1,8 +1,12 @@
 """Plasma multi device LED driver."""
 import pathlib
 import sys
+from importlib.metadata import PackageNotFoundError, version
 
-__version__ = '3.0.0'
+try:
+    __version__ = version("plasmalights")
+except PackageNotFoundError:
+    __version__ = "0.0.0"
 
 
 def auto(default=None, descriptor=None):

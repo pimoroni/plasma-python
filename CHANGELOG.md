@@ -1,12 +1,13 @@
 # Changelog
 
-3.0.0
+3.0.1
 -----
 
 * Repackage to pyproject/hatchling
 * Drop Python 3.7 and 3.8, add 3.12 and 3.13
 * Fix GitHub URL to plasma-python
 * plasmafx: replace pkg_resources with importlib.metadata
+* Version now comes from the git tag; `plasma.__version__` reads package metadata
 
 2.0.2
 -----

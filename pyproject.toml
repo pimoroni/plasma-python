@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling", "hatch-fancy-pypi-readme"]
+requires = ["hatchling", "hatch-fancy-pypi-readme", "uv-dynamic-versioning"]
 build-backend = "hatchling.build"
 
 [project]
@@ -53,12 +53,18 @@ dev = [
     "twine",
     "hatch",
     "hatch-fancy-pypi-readme",
+    "uv-dynamic-versioning",
     "tox",
     "pdoc",
 ]
 
 [tool.hatch.version]
-path = "plasma/__init__.py"
+source = "uv-dynamic-versioning"
+
+# check-manifest and any build from an unpacked sdist have no git to read, and the
+# publish workflow checks the built version against the tag to catch the fallback.
+[tool.uv-dynamic-versioning]
+fallback-version = "0.0.0"
 
 [tool.hatch.build]
 include = [
