@@ -74,6 +74,7 @@ def main():
     if args.daemonize:
         fork()
 
+    sys.path.insert(0, "/etc/plasma/plasma")
     from plasma import auto
 
     plasma = auto(f"GPIO:14:15:pixel_count={LIGHTS * 4}", CONFIG_FILE)

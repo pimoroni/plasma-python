@@ -4,8 +4,8 @@ Plasma is an LED/Light sequencing suite written to harmonise a variety of LED st
 
 Plasma also includes plasmad, a system daemon for sequencing light strips using PNG images to provide animation frames.
 
-[![Build Status](https://img.shields.io/github/actions/workflow/status/pimoroni/plasma/test.yml?branch=master)](https://github.com/pimoroni/plasma/actions/workflows/test.yml)
-[![Coverage Status](https://coveralls.io/repos/github/pimoroni/plasma/badge.svg?branch=master)](https://coveralls.io/github/pimoroni/plasma?branch=master)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/pimoroni/plasma-python/test.yml?branch=master)](https://github.com/pimoroni/plasma-python/actions/workflows/test.yml)
+[![Coverage Status](https://coveralls.io/repos/github/pimoroni/plasma-python/badge.svg?branch=master)](https://coveralls.io/github/pimoroni/plasma-python?branch=master)
 [![PyPi Package](https://img.shields.io/pypi/v/plasmalights.svg)](https://pypi.python.org/pypi/plasmalights)
 [![Python Versions](https://img.shields.io/pypi/pyversions/plasmalights.svg)](https://pypi.python.org/pypi/plasmalights)
 
@@ -48,7 +48,7 @@ python3 -m pip install plasmalights
 To install the Plasma daemon you should clone this repository, navigate to the "daemon" directory and run the installer:
 
 ```
-git clone https://github.com/pimoroni/plasma
+git clone https://github.com/pimoroni/plasma-python
 cd plasma/daemon
 sudo ./install
 ```

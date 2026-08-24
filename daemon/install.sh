@@ -11,13 +11,15 @@ if [ -d "/etc/plasma" ]; then
 fi
 
 printf "Installing requirements\n"
-sudo apt install python3 python3-pip
-sudo pip3 install pypng plasmalights
+apt install python3 python3-pip python3-png
 
 printf "Installing plasma\n"
 mkdir /etc/plasma
 cp etc/plasma/* /etc/plasma
 cp usr/bin/* /usr/bin/
+
+printf "Installing python libraries into /etc/plasma/plasma\n"
+python3 -m pip install --target /etc/plasma/plasma plasmalights
 
 printf "Installing /etc/systemd/system/plasma.service\n"
 cp etc/systemd/system/plasma.service /etc/systemd/system/plasma.service

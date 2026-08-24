@@ -41,7 +41,7 @@ dependencies = [
 ]
 
 [project.urls]
-GitHub = "https://www.github.com/pimoroni/plasma"
+GitHub = "https://www.github.com/pimoroni/plasma-python"
 Homepage = "https://www.pimoroni.com"
 
 [dependency-groups]
