@@ -49,7 +49,7 @@ To install the Plasma daemon you should clone this repository, navigate to the "
 
 ```
 git clone https://github.com/pimoroni/plasma-python
-cd plasma/daemon
+cd plasma-python/daemon
 sudo ./install
 ```
 
