@@ -2,6 +2,7 @@
 
 import argparse
 import pathlib
+import stat
 import sys
 
 ROOT = pathlib.Path('/etc/plasma')
@@ -40,10 +41,16 @@ def valid_patterns():
 
 
 def open_fifo(filename):
-    if filename.exists():
+    if filename.exists() and stat.S_ISFIFO(filename.stat().st_mode):
         return open(filename, 'wb')
     else:
-        raise RuntimeError(f"FIFO {filename} does not exit! Is plasma running?")
+        raise RuntimeError(f"FIFO {filename} does not exist or is not a pipe! Is plasma running?")
+
+
+def send(msg):
+    with open_fifo(FIFO) as fifo:
+        fifo.write(f"{msg}\n".encode("utf-8"))
+        fifo.flush()
 
 
 def send(msg):

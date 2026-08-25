@@ -4,6 +4,7 @@ import argparse
 import os
 import select
 import signal
+import stat
 import sys
 import threading
 import time
@@ -61,13 +62,16 @@ def parse_color(value):
         pass
     return None
 
+
 class FIFO():
     def __init__(self, filename):
         self.filename = filename
         try:
             os.mkfifo(self.filename)
         except OSError:
-            pass
+            if os.path.exists(self.filename) and not stat.S_ISFIFO(os.stat(self.filename).st_mode):
+                os.remove(self.filename)
+                os.mkfifo(self.filename)
         print("Opening...")
         self.fifo = os.open(self.filename, os.O_RDONLY | os.O_NONBLOCK)
         print("Open...")
@@ -244,16 +248,11 @@ def main():
                     last_r, last_g, last_b = r, g, b
                     last_brightness = args.brightness
                     needs_update = True
-                # Re-apply per-pixel overrides on top of the base colour, but
-                # only on frames we're actually going to push to the hardware.
                 if needs_update and pixel_colors:
                     for idx, (pr, pg, pb) in pixel_colors.items():
                         if 0 <= idx < plasma.get_pixel_count():
                             plasma.set_pixel(idx, pr, pg, pb, brightness=args.brightness)
 
-            # Single place that latches the buffer to the LEDs and clears the
-            # dirty flag. Clearing it anywhere else means the set_* calls
-            # silently never reach the hardware.
             if needs_update:
                 plasma.show()
                 needs_update = False
