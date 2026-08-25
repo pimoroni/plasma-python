@@ -3,6 +3,7 @@ import importlib.util
 import importlib.machinery
 import os
 import select
+import stat
 import sys
 import tempfile
 import threading
@@ -328,3 +329,78 @@ class TestPlasmactl:
         data = os.read(reader_fd, 1024)
         os.close(reader_fd)
         assert data == b"255 0 0\n"
+
+
+class TestFIFOSafety:
+    """Test FIFO safety checks in plasmactl and daemon (PR #22)."""
+
+    def load_plasmactl(self):
+        sys.modules.setdefault('png', mock.MagicMock())
+        path = os.path.join(os.path.dirname(__file__), "..", "daemon", "usr", "bin", "plasmactl")
+        loader = importlib.machinery.SourceFileLoader("plasmactl_safe", path)
+        spec = importlib.util.spec_from_loader("plasmactl_safe", loader)
+        mod = importlib.util.module_from_spec(spec)
+        loader.exec_module(mod)
+        return mod
+
+    def test_open_fifo_rejects_regular_file(self, tmp_path):
+        """plasmactl should refuse to write to a non-FIFO file."""
+        mod = self.load_plasmactl()
+        regular = tmp_path / "not_a_fifo"
+        regular.write_text("data")
+        with pytest.raises(RuntimeError, match="not a pipe"):
+            mod.open_fifo(regular)
+
+    def test_open_fifo_rejects_missing_file(self, tmp_path):
+        mod = self.load_plasmactl()
+        missing = tmp_path / "nonexistent"
+        with pytest.raises(RuntimeError, match="does not exist"):
+            mod.open_fifo(missing)
+
+    def test_open_fifo_accepts_real_fifo(self, tmp_path):
+        mod = self.load_plasmactl()
+        fifo = tmp_path / "real_fifo"
+        os.mkfifo(str(fifo))
+        reader_fd = os.open(str(fifo), os.O_RDONLY | os.O_NONBLOCK)
+        f = mod.open_fifo(fifo)
+        f.close()
+        os.close(reader_fd)
+
+    def test_daemon_fifo_removes_stale_file(self, daemon, tmp_path):
+        """Daemon should remove a stale non-FIFO file before creating the pipe."""
+        stale = tmp_path / "stale_plasma"
+        stale.write_text("stale data")
+        assert stale.exists()
+        assert not stat.S_ISFIFO(stale.stat().st_mode)
+
+        daemon.PIPE_FILE = str(stale)
+        with mock.patch.object(daemon.os, 'mkfifo') as mock_mkfifo:
+            with mock.patch.object(daemon.os, 'open', return_value=42):
+                with mock.patch.object(daemon.os, 'close'):
+                    fifo = daemon.FIFO(str(stale))
+            mock_mkfifo.assert_called_once_with(str(stale))
+
+    def test_daemon_fifo_preserves_existing_fifo(self, daemon, tmp_path):
+        """Daemon should not remove an existing FIFO."""
+        fifo_path = tmp_path / "existing_fifo"
+        os.mkfifo(str(fifo_path))
+        assert stat.S_ISFIFO(fifo_path.stat().st_mode)
+
+        daemon.PIPE_FILE = str(fifo_path)
+        with mock.patch.object(daemon.os, 'mkfifo') as mock_mkfifo:
+            mock_mkfifo.side_effect = OSError("already exists")
+            with mock.patch.object(daemon.os, 'open', return_value=42):
+                with mock.patch.object(daemon.os, 'close'):
+                    with mock.patch.object(daemon.os, 'remove') as mock_remove:
+                        fifo = daemon.FIFO(str(fifo_path))
+            mock_remove.assert_not_called()
+
+    def test_daemon_fifo_creates_new_fifo(self, daemon, tmp_path):
+        """Daemon should create a FIFO when no file exists."""
+        new_fifo = tmp_path / "new_plasma"
+        daemon.PIPE_FILE = str(new_fifo)
+        with mock.patch.object(daemon.os, 'mkfifo') as mock_mkfifo:
+            with mock.patch.object(daemon.os, 'open', return_value=42):
+                with mock.patch.object(daemon.os, 'close'):
+                    fifo = daemon.FIFO(str(new_fifo))
+            mock_mkfifo.assert_called_once_with(str(new_fifo))

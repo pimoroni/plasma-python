@@ -53,12 +53,6 @@ def send(msg):
         fifo.flush()
 
 
-def send(msg):
-    with open_fifo(FIFO) as fifo:
-        fifo.write(f"{msg}\n".encode("utf-8"))
-        fifo.flush()
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Control the plasma LED daemon")
     parser.add_argument('--install', type=pathlib.Path, help='Install an animation file')
