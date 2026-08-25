@@ -7,6 +7,21 @@ import sys
 ROOT = pathlib.Path('/etc/plasma')
 FIFO = pathlib.Path('/tmp/plasma')
 
+NAMED_COLORS = {
+    "off": "0 0 0",
+    "black": "0 0 0",
+    "white": "255 255 255",
+    "red": "255 0 0",
+    "green": "0 255 0",
+    "blue": "0 0 255",
+    "yellow": "255 255 0",
+    "cyan": "0 255 255",
+    "purple": "128 0 128",
+    "magenta": "255 0 255",
+    "orange": "255 165 0",
+    "dim_white": "30 30 30",
+}
+
 
 def Color(value):
     try:
@@ -31,14 +46,25 @@ def open_fifo(filename):
         raise RuntimeError(f"FIFO {filename} does not exit! Is plasma running?")
 
 
+def send(msg):
+    with open_fifo(FIFO) as fifo:
+        fifo.write(f"{msg}\n".encode("utf-8"))
+        fifo.flush()
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Control the plasma LED daemon")
     parser.add_argument('--install', type=pathlib.Path, help='Install an animation file')
     parser.add_argument('--list', action='store_true', help='List available animations')
     parser.add_argument('--colour', nargs=3, type=Color, help='Display an RGB colour (all values 0-255)')
+    parser.add_argument('--color', dest='colour', nargs=3, type=Color, help='Alias for --colour')
     parser.add_argument('--fps', type=int, help='Set the update framerate')
     parser.add_argument('--brightness', type=float, help='Set the LED brightness')
-    parser.add_argument('--pattern', type=str, help='Display an image-based aniamtion from /etc/plasma', choices=list(valid_patterns()))
+    parser.add_argument('--pattern', type=str, help='Display an image-based animation from /etc/plasma', choices=list(valid_patterns()))
+    parser.add_argument('--set', nargs='+', help='Set pixel(s) to a color. Usage: --set <index> <color> or --set <index> <r> <g> <b>')
+    parser.add_argument('--unset', type=int, help='Clear per-pixel override at index')
+    parser.add_argument('--clear', action='store_true', help='Clear all per-pixel overrides')
+    parser.add_argument('--off', action='store_true', help='Turn all LEDs off')
 
     args = parser.parse_args()
 
@@ -50,25 +76,66 @@ if __name__ == "__main__":
 
     if args.pattern:
         print(f"Setting pattern to {args.pattern}")
-        with open_fifo(FIFO) as fifo:
-            fifo.write(f"{args.pattern}\n".encode("utf-8"))
-            fifo.flush()
+        send(args.pattern)
         sys.exit(0)
 
     if args.colour:
         r, g, b = args.colour
         print(f"Setting colour to {r}, {g}, {b}")
-        with open_fifo(FIFO) as fifo:
-            fifo.write(f"{r} {g} {b}\n".encode("utf-8"))
-            fifo.flush()
+        send(f"{r} {g} {b}")
+        sys.exit(0)
+
+    if args.set:
+        parts = args.set
+        if len(parts) < 2:
+            print("--set requires at least: <index> <color>")
+            sys.exit(1)
+        idx = parts[0]
+        color_parts = parts[1:]
+        if len(color_parts) == 1:
+            color = color_parts[0]
+            if color in NAMED_COLORS:
+                r, g, b = NAMED_COLORS[color].split()
+                send(f"set {idx} {r} {g} {b}")
+            elif color.startswith("#") and len(color) == 7:
+                h = color[1:]
+                r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+                send(f"set {idx} {r} {g} {b}")
+            else:
+                print(f"Unknown color: {color}")
+                sys.exit(1)
+        elif len(color_parts) == 3:
+            r, g, b = color_parts
+            send(f"set {idx} {r} {g} {b}")
+        else:
+            print("--set requires: <index> <color> or <index> <r> <g> <b>")
+            sys.exit(1)
+        print(f"Set pixel {idx} to {color_parts}")
+        sys.exit(0)
+
+    if args.unset is not None:
+        send(f"unset {args.unset}")
+        print(f"Unset pixel {args.unset}")
+        sys.exit(0)
+
+    if args.clear:
+        send("clear")
+        print("Cleared per-pixel overrides")
+        sys.exit(0)
+
+    if args.off:
+        send("off")
+        print("LEDs off")
         sys.exit(0)
 
     if args.brightness is not None:
-        brightness = args.brightness
-        print(f"Setting brightness to {brightness}")
-        with open_fifo(FIFO) as fifo:
-            fifo.write(f"brightness {brightness}\n".encode("utf-8"))
-            fifo.flush()
+        send(f"brightness {args.brightness}")
+        print(f"Setting brightness to {args.brightness}")
+        sys.exit(0)
+
+    if args.fps is not None:
+        send(f"fps {args.fps}")
+        print(f"Setting framerate to {args.fps}")
         sys.exit(0)
 
     parser.print_help()

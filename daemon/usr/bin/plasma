@@ -30,6 +30,36 @@ stopped = threading.Event()
 
 _pattern_cache = {}
 
+NAMED_COLORS = {
+    "off": (0, 0, 0),
+    "black": (0, 0, 0),
+    "white": (255, 255, 255),
+    "red": (255, 0, 0),
+    "green": (0, 255, 0),
+    "blue": (0, 0, 255),
+    "yellow": (255, 255, 0),
+    "cyan": (0, 255, 255),
+    "purple": (128, 0, 128),
+    "magenta": (255, 0, 255),
+    "orange": (255, 165, 0),
+    "dim_white": (30, 30, 30),
+}
+
+
+def parse_color(value):
+    if value in NAMED_COLORS:
+        return NAMED_COLORS[value]
+    if value.startswith("#"):
+        h = value[1:]
+        if len(h) == 6:
+            return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+    try:
+        n = int(value)
+        if 0 <= n <= 0xFFFFFF:
+            return ((n >> 16) & 0xFF, (n >> 8) & 0xFF, n & 0xFF)
+    except ValueError:
+        pass
+    return None
 
 class FIFO():
     def __init__(self, filename):
@@ -98,6 +128,7 @@ def main():
         r, g, b = 0, 0, 0
         last_r, last_g, last_b = -1, -1, -1
         last_brightness = -1
+        pixel_colors = {}
         pattern, pattern_w, pattern_h, pattern_meta = load_pattern("default")
         alpha = pattern_meta['alpha']
         channels = 4 if alpha else 3
@@ -115,10 +146,63 @@ def main():
                     log('Received user command "stop". Stopping.')
                     break
 
+                if command == "clear":
+                    pixel_colors.clear()
+                    needs_update = True
+                    log("Cleared per-pixel overrides")
+                    continue
+
+                if command == "off":
+                    r, g, b = 0, 0, 0
+                    pixel_colors.clear()
+                    pattern, pattern_w, pattern_h, pattern_meta = None, 0, 0, None
+                    needs_update = True
+                    continue
+
                 rgb = command.split(' ')
+
+                if len(rgb) >= 2 and rgb[0] == "set":
+                    try:
+                        idx = int(rgb[1])
+                        if len(rgb) == 3:
+                            color = parse_color(rgb[2])
+                            if color is None:
+                                log("Invalid color: {}".format(rgb[2]))
+                                continue
+                        elif len(rgb) == 5:
+                            color = tuple(min(255, int(c)) for c in rgb[2:5])
+                        else:
+                            log("Invalid set command: {}".format(command))
+                            continue
+                        pixel_colors[idx] = color
+                        pattern, pattern_w, pattern_h, pattern_meta = None, 0, 0, None
+                        needs_update = True
+                    except (ValueError, IndexError):
+                        log("Invalid set command: {}".format(command))
+                    continue
+
+                if len(rgb) == 2 and rgb[0] == "unset":
+                    try:
+                        idx = int(rgb[1])
+                        pixel_colors.pop(idx, None)
+                        needs_update = True
+                    except ValueError:
+                        log("Invalid unset command: {}".format(command))
+                    continue
+
+                if len(rgb) == 1:
+                    color = parse_color(rgb[0])
+                    if color is not None:
+                        r, g, b = color
+                        pixel_colors.clear()
+                        pattern, pattern_w, pattern_h, pattern_meta = None, 0, 0, None
+                        needs_update = True
+                        continue
+
                 if len(rgb) == 3:
                     try:
                         r, g, b = [min(255, int(c)) for c in rgb]
+                        pixel_colors.clear()
                         pattern, pattern_w, pattern_h, pattern_meta = None, 0, 0, None
                         needs_update = True
                     except ValueError:
@@ -143,7 +227,7 @@ def main():
                         last_pattern_offset = -1
                         needs_update = True
 
-            if pattern is not None:
+            if pattern is not None and not pixel_colors:
                 offset_y = int(delta % pattern_h)
                 if offset_y != last_pattern_offset or args.brightness != last_brightness:
                     last_pattern_offset = offset_y
@@ -160,6 +244,12 @@ def main():
                     last_r, last_g, last_b = r, g, b
                     last_brightness = args.brightness
                     needs_update = True
+                # Re-apply per-pixel overrides on top of the base colour, but
+                # only on frames we're actually going to push to the hardware.
+                if needs_update and pixel_colors:
+                    for idx, (pr, pg, pb) in pixel_colors.items():
+                        if 0 <= idx < plasma.get_pixel_count():
+                            plasma.set_pixel(idx, pr, pg, pb, brightness=args.brightness)
 
             # Single place that latches the buffer to the LEDs and clears the
             # dirty flag. Clearing it anywhere else means the set_* calls
