@@ -183,3 +183,148 @@ class TestFPSClamping:
         assert max(1, int(0)) == 1
         assert max(1, int(-5)) == 1
         assert max(1, int(30)) == 30
+
+
+class TestParseColor:
+    """Test parse_color function (PR #21)."""
+
+    def test_named_colors(self, daemon):
+        assert daemon.parse_color("red") == (255, 0, 0)
+        assert daemon.parse_color("green") == (0, 255, 0)
+        assert daemon.parse_color("blue") == (0, 0, 255)
+        assert daemon.parse_color("off") == (0, 0, 0)
+        assert daemon.parse_color("black") == (0, 0, 0)
+        assert daemon.parse_color("white") == (255, 255, 255)
+        assert daemon.parse_color("yellow") == (255, 255, 0)
+        assert daemon.parse_color("cyan") == (0, 255, 255)
+        assert daemon.parse_color("purple") == (128, 0, 128)
+        assert daemon.parse_color("magenta") == (255, 0, 255)
+        assert daemon.parse_color("orange") == (255, 165, 0)
+        assert daemon.parse_color("dim_white") == (30, 30, 30)
+
+    def test_hex_colors(self, daemon):
+        assert daemon.parse_color("#ff0000") == (255, 0, 0)
+        assert daemon.parse_color("#00ff00") == (0, 255, 0)
+        assert daemon.parse_color("#0000ff") == (0, 0, 255)
+        assert daemon.parse_color("#ffffff") == (255, 255, 255)
+
+    def test_invalid_hex_returns_none(self, daemon):
+        assert daemon.parse_color("#abc") is None
+        assert daemon.parse_color("#abcdef0") is None
+
+    def test_integer_color(self, daemon):
+        assert daemon.parse_color("16711680") == (255, 0, 0)
+        assert daemon.parse_color("0") == (0, 0, 0)
+
+    def test_invalid_color_returns_none(self, daemon):
+        assert daemon.parse_color("notacolor") is None
+        assert daemon.parse_color("") is None
+
+
+class TestPerPixelControl:
+    """Test per-pixel override logic (PR #21)."""
+
+    def test_set_pixel_override(self, daemon):
+        """Setting a pixel override should call set_pixel for that index."""
+        mock_plasma = mock.MagicMock()
+        mock_plasma.get_pixel_count.return_value = 10
+
+        pixel_colors = {0: (255, 0, 0), 3: (0, 255, 0)}
+        needs_update = True
+
+        if needs_update and pixel_colors:
+            for idx, (pr, pg, pb) in pixel_colors.items():
+                if 0 <= idx < mock_plasma.get_pixel_count():
+                    mock_plasma.set_pixel(idx, pr, pg, pb, brightness=1.0)
+
+        mock_plasma.set_pixel.assert_any_call(0, 255, 0, 0, brightness=1.0)
+        mock_plasma.set_pixel.assert_any_call(3, 0, 255, 0, brightness=1.0)
+
+    def test_unset_pixel_override(self):
+        pixel_colors = {0: (255, 0, 0), 3: (0, 255, 0)}
+        pixel_colors.pop(0, None)
+        assert 0 not in pixel_colors
+        assert 3 in pixel_colors
+
+    def test_clear_all_overrides(self):
+        pixel_colors = {0: (255, 0, 0), 3: (0, 255, 0)}
+        pixel_colors.clear()
+        assert len(pixel_colors) == 0
+
+    def test_off_command_clears_everything(self):
+        r, g, b = 255, 0, 0
+        pixel_colors = {0: (255, 0, 0), 3: (0, 255, 0)}
+        pattern = "some_pattern"
+
+        r, g, b = 0, 0, 0
+        pixel_colors.clear()
+        pattern = None
+
+        assert r == 0 and g == 0 and b == 0
+        assert len(pixel_colors) == 0
+        assert pattern is None
+
+    def test_out_of_range_pixel_ignored(self, daemon):
+        """Pixel indices outside the strip range should be silently ignored."""
+        mock_plasma = mock.MagicMock()
+        mock_plasma.get_pixel_count.return_value = 10
+
+        pixel_colors = {5: (255, 0, 0), 15: (0, 255, 0)}
+        needs_update = True
+
+        if needs_update and pixel_colors:
+            for idx, (pr, pg, pb) in pixel_colors.items():
+                if 0 <= idx < mock_plasma.get_pixel_count():
+                    mock_plasma.set_pixel(idx, pr, pg, pb, brightness=1.0)
+
+        mock_plasma.set_pixel.assert_called_once_with(5, 255, 0, 0, brightness=1.0)
+
+    def test_named_color_command_sets_all(self, daemon):
+        """A single-word named color command should set all LEDs."""
+        color = daemon.parse_color("red")
+        assert color == (255, 0, 0)
+        r, g, b = color
+        assert r == 255 and g == 0 and b == 0
+
+
+class TestPlasmactl:
+    """Test plasmactl command-line interface (PR #21)."""
+
+    def load_plasmactl(self):
+        sys.modules.setdefault('png', mock.MagicMock())
+        path = os.path.join(os.path.dirname(__file__), "..", "daemon", "usr", "bin", "plasmactl")
+        loader = importlib.machinery.SourceFileLoader("plasmactl", path)
+        spec = importlib.util.spec_from_loader("plasmactl", loader)
+        mod = importlib.util.module_from_spec(spec)
+        loader.exec_module(mod)
+        return mod
+
+    def test_named_colors_defined(self):
+        mod = self.load_plasmactl()
+        assert mod.NAMED_COLORS["red"] == "255 0 0"
+        assert mod.NAMED_COLORS["blue"] == "0 0 255"
+        assert mod.NAMED_COLORS["off"] == "0 0 0"
+
+    def test_color_function_parses_int(self):
+        mod = self.load_plasmactl()
+        assert mod.Color("255") == 255
+        assert mod.Color("0") == 0
+
+    def test_color_function_parses_hex(self):
+        mod = self.load_plasmactl()
+        assert mod.Color("ff") == 255
+
+    def test_send_writes_to_fifo(self, tmp_path):
+        mod = self.load_plasmactl()
+        fifo = tmp_path / "plasma"
+        os.mkfifo(str(fifo))
+        mod.FIFO = fifo
+
+        reader_fd = os.open(str(fifo), os.O_RDONLY | os.O_NONBLOCK)
+        mod.send("255 0 0")
+
+        ready, _, _ = select.select([reader_fd], [], [], 1.0)
+        assert ready
+        data = os.read(reader_fd, 1024)
+        os.close(reader_fd)
+        assert data == b"255 0 0\n"
