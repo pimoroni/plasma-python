@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import select
 import signal
 import sys
 import threading
@@ -27,6 +28,38 @@ ERR_FILE = "/var/log/plasma.err"
 
 stopped = threading.Event()
 
+_pattern_cache = {}
+
+NAMED_COLORS = {
+    "off": (0, 0, 0),
+    "black": (0, 0, 0),
+    "white": (255, 255, 255),
+    "red": (255, 0, 0),
+    "green": (0, 255, 0),
+    "blue": (0, 0, 255),
+    "yellow": (255, 255, 0),
+    "cyan": (0, 255, 255),
+    "purple": (128, 0, 128),
+    "magenta": (255, 0, 255),
+    "orange": (255, 165, 0),
+    "dim_white": (30, 30, 30),
+}
+
+
+def parse_color(value):
+    if value in NAMED_COLORS:
+        return NAMED_COLORS[value]
+    if value.startswith("#"):
+        h = value[1:]
+        if len(h) == 6:
+            return tuple(int(h[i:i+2], 16) for i in (0, 2, 4))
+    try:
+        n = int(value)
+        if 0 <= n <= 0xFFFFFF:
+            return ((n >> 16) & 0xFF, (n >> 8) & 0xFF, n & 0xFF)
+    except ValueError:
+        pass
+    return None
 
 class FIFO():
     def __init__(self, filename):
@@ -39,26 +72,29 @@ class FIFO():
         self.fifo = os.open(self.filename, os.O_RDONLY | os.O_NONBLOCK)
         print("Open...")
 
-    def readline(self, timeout=1):
+    def readline(self, timeout=1.0):
+        ready, _, _ = select.select([self.fifo], [], [], timeout)
+        if not ready:
+            return None
+
+        buf = b""
         t_start = time.time()
-        try:
-            buf = os.read(self.fifo, 1)
-        except BlockingIOError:
-            return None
-
-        if len(buf) == 0:
-            return None
-
         while time.time() - t_start < timeout:
+            ready, _, _ = select.select([self.fifo], [], [], 0.1)
+            if not ready:
+                if buf:
+                    continue
+                break
             try:
                 c = os.read(self.fifo, 1)
+                if not c:
+                    break
                 if c == b"\n":
                     return buf
-                if len(c) == 1:
-                    buf += c
+                buf += c
             except BlockingIOError:
                 continue
-        return None
+        return buf if buf else None
 
     def __enter__(self):
         return self
@@ -90,13 +126,18 @@ def main():
 
     with FIFO(PIPE_FILE) as fifo:
         r, g, b = 0, 0, 0
+        last_r, last_g, last_b = -1, -1, -1
+        last_brightness = -1
+        pixel_colors = {}
         pattern, pattern_w, pattern_h, pattern_meta = load_pattern("default")
         alpha = pattern_meta['alpha']
         channels = 4 if alpha else 3
+        last_pattern_offset = -1
+        needs_update = True
 
         while not stopped.wait(1.0 / args.fps):
             delta = time.time() * 60
-            command = fifo.readline()
+            command = fifo.readline(timeout=0.01)
             if command is not None:
                 command = command.decode('utf-8').strip()
 
@@ -105,51 +146,134 @@ def main():
                     log('Received user command "stop". Stopping.')
                     break
 
+                if command == "clear":
+                    pixel_colors.clear()
+                    needs_update = True
+                    log("Cleared per-pixel overrides")
+                    continue
+
+                if command == "off":
+                    r, g, b = 0, 0, 0
+                    pixel_colors.clear()
+                    pattern, pattern_w, pattern_h, pattern_meta = None, 0, 0, None
+                    needs_update = True
+                    continue
+
                 rgb = command.split(' ')
+
+                if len(rgb) >= 2 and rgb[0] == "set":
+                    try:
+                        idx = int(rgb[1])
+                        if len(rgb) == 3:
+                            color = parse_color(rgb[2])
+                            if color is None:
+                                log("Invalid color: {}".format(rgb[2]))
+                                continue
+                        elif len(rgb) == 5:
+                            color = tuple(min(255, int(c)) for c in rgb[2:5])
+                        else:
+                            log("Invalid set command: {}".format(command))
+                            continue
+                        pixel_colors[idx] = color
+                        pattern, pattern_w, pattern_h, pattern_meta = None, 0, 0, None
+                        needs_update = True
+                    except (ValueError, IndexError):
+                        log("Invalid set command: {}".format(command))
+                    continue
+
+                if len(rgb) == 2 and rgb[0] == "unset":
+                    try:
+                        idx = int(rgb[1])
+                        pixel_colors.pop(idx, None)
+                        needs_update = True
+                    except ValueError:
+                        log("Invalid unset command: {}".format(command))
+                    continue
+
+                if len(rgb) == 1:
+                    color = parse_color(rgb[0])
+                    if color is not None:
+                        r, g, b = color
+                        pixel_colors.clear()
+                        pattern, pattern_w, pattern_h, pattern_meta = None, 0, 0, None
+                        needs_update = True
+                        continue
+
                 if len(rgb) == 3:
                     try:
                         r, g, b = [min(255, int(c)) for c in rgb]
+                        pixel_colors.clear()
                         pattern, pattern_w, pattern_h, pattern_meta = None, 0, 0, None
+                        needs_update = True
                     except ValueError:
                         log("Invalid colour: {}".format(command))
                 elif len(rgb) == 2 and rgb[0] == "fps":
                     try:
-                        args.fps = int(rgb[1])
+                        args.fps = max(1, int(rgb[1]))
                         log("Framerate set to: {}fps".format(rgb[1]))
                     except ValueError:
                         log("Invalid framerate: {}".format(rgb[1]))
                 elif len(rgb) == 2 and rgb[0] == "brightness":
                     try:
                         args.brightness = float(rgb[1])
-                        log("Brightness set to: {}".format(args.brightness))
+                        needs_update = True
                     except ValueError:
                         log("Invalid brightness {}".format(rgb[1]))
                 else:
                     pattern, pattern_w, pattern_h, pattern_meta = load_pattern(command)
-                    alpha = pattern_meta['alpha']
-                    channels = 4 if alpha else 3
+                    if pattern is not None:
+                        alpha = pattern_meta['alpha']
+                        channels = 4 if alpha else 3
+                        last_pattern_offset = -1
+                        needs_update = True
 
-            if pattern is not None:
+            if pattern is not None and not pixel_colors:
                 offset_y = int(delta % pattern_h)
-                row = pattern[offset_y]
-                for x in range(plasma.get_pixel_count()):
-                    offset_x = (x * channels) % (pattern_w * channels)
-                    r, g, b = row[offset_x:offset_x + 3]
-                    plasma.set_pixel(x, r, g, b, brightness=args.brightness)
+                if offset_y != last_pattern_offset or args.brightness != last_brightness:
+                    last_pattern_offset = offset_y
+                    last_brightness = args.brightness
+                    row = pattern[offset_y]
+                    for x in range(plasma.get_pixel_count()):
+                        offset_x = (x * channels) % (pattern_w * channels)
+                        pr, pg, pb = row[offset_x:offset_x + 3]
+                        plasma.set_pixel(x, pr, pg, pb, brightness=args.brightness)
+                    needs_update = True
             else:
-                plasma.set_all(r, g, b, brightness=args.brightness)
+                if needs_update or (r != last_r or g != last_g or b != last_b or args.brightness != last_brightness):
+                    plasma.set_all(r, g, b, brightness=args.brightness)
+                    last_r, last_g, last_b = r, g, b
+                    last_brightness = args.brightness
+                    needs_update = True
+                # Re-apply per-pixel overrides on top of the base colour, but
+                # only on frames we're actually going to push to the hardware.
+                if needs_update and pixel_colors:
+                    for idx, (pr, pg, pb) in pixel_colors.items():
+                        if 0 <= idx < plasma.get_pixel_count():
+                            plasma.set_pixel(idx, pr, pg, pb, brightness=args.brightness)
 
-            plasma.show()
+            # Single place that latches the buffer to the LEDs and clears the
+            # dirty flag. Clearing it anywhere else means the set_* calls
+            # silently never reach the hardware.
+            if needs_update:
+                plasma.show()
+                needs_update = False
 
 
 def load_pattern(pattern_name):
+    if pattern_name in _pattern_cache:
+        cached = _pattern_cache[pattern_name]
+        log("Loaded pattern from cache: {}".format(pattern_name))
+        return cached
+
     pattern_file = os.path.join(PATTERNS, "{}.png".format(pattern_name))
     if os.path.isfile(pattern_file):
         r = png.Reader(file=open(pattern_file, 'rb'))
         pattern_w, pattern_h, pattern, pattern_meta = r.read()
         pattern = list(pattern)
+        result = (pattern, pattern_w, pattern_h, pattern_meta)
+        _pattern_cache[pattern_name] = result
         log("Loaded pattern file: {}".format(pattern_file))
-        return pattern, pattern_w, pattern_h, pattern_meta
+        return result
     else:
         log("Invalid pattern file: {}".format(pattern_file))
         return None, 0, 0, None

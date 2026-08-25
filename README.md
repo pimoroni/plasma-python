@@ -67,9 +67,37 @@ The Plasma daemon installer installs two programs onto your Raspberry Pi. `plasm
 
 * `plasmactl 255 0 0` - Set Plasma lights to R, G, B colour. Red in this case.
 * `plasmactl <pattern>` - Set Plasma lights to pattern image
-* `plasmactl fps <fps>` - Change plasma effect framerate (default is 30, lower FPS = less CPU)
+* `plasmactl --fps <fps>` - Change plasma effect framerate (default is 30, lower FPS = less CPU)
+* `plasmactl --brightness <0.0-1.0>` - Set LED brightness
 * `plasmactl --list` - List all available patterns
 * `sudo plasmactl --install <pattern>` - Install a new pattern, where `<pattern>` is the filename of a 24bit PNG image file
+* `plasmactl --set <index> <color>` - Set a single pixel to a named color (e.g. `red`, `blue`, `dim_white`)
+* `plasmactl --set <index> <r> <g> <b>` - Set a single pixel to an RGB colour
+* `plasmactl --unset <index>` - Clear a per-pixel override
+* `plasmactl --clear` - Clear all per-pixel overrides
+* `plasmactl --off` - Turn all LEDs off
+* `plasmactl --color <r> <g> <b>` - Alias for `--colour`
+
+Named colours: `off`, `black`, `white`, `red`, `green`, `blue`, `yellow`, `cyan`, `purple`, `magenta`, `orange`, `dim_white`. Hex colours (e.g. `#ff0000`) are also supported.
+
+### Pipe protocol
+
+External applications can control the Plasma daemon by writing commands to the FIFO pipe at `/tmp/plasma`:
+
+```
+echo "255 0 0" > /tmp/plasma          # Set all LEDs to red
+echo "red" > /tmp/plasma              # Set all LEDs to red (named color)
+echo "set 0 255 0 0" > /tmp/plasma    # Set pixel 0 to red
+echo "set 1 blue" > /tmp/plasma       # Set pixel 1 to blue (named color)
+echo "set 2 #00ff00" > /tmp/plasma     # Set pixel 2 to green (hex color)
+echo "unset 0" > /tmp/plasma          # Clear per-pixel override on pixel 0
+echo "clear" > /tmp/plasma            # Clear all per-pixel overrides
+echo "off" > /tmp/plasma             # Turn all LEDs off
+echo "fps 10" > /tmp/plasma          # Change framerate to 10fps
+echo "brightness 0.5" > /tmp/plasma   # Set brightness to 50%
+echo "mypattern" > /tmp/plasma        # Switch to a PNG pattern
+echo "stop" > /tmp/plasma            # Stop the daemon
+```
 
 ### Development:
 
