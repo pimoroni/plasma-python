@@ -1,17 +1,18 @@
 """Base class for Plasma LED devices."""
 import atexit
+from typing import ClassVar
 
 
-class Plasma():
+class Plasma:
     """Base class for Plasma LED devices."""
 
     name = ""
 
-    options = {
+    options: ClassVar = {
         'pixel_count': int,
     }
 
-    option_order = []
+    option_order: ClassVar = []
 
     def __init__(self, pixel_count=1):
         """Initialise Plasma device.

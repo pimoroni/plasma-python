@@ -1,5 +1,5 @@
 """Test Plasma basic initialisation."""
-import mock
+from unittest import mock
 
 
 def test_legacy_setup(GPIO):

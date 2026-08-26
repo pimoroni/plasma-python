@@ -1,5 +1,6 @@
 """Plasma support for APA102 style pixels."""
 import time
+from typing import ClassVar
 
 from .core import Plasma
 
@@ -9,7 +10,7 @@ class PlasmaAPA102(Plasma):
 
     name = "APA102"
 
-    options = {
+    options: ClassVar = {
         'pixel_count': int,
         "gpio_data": int,
         "gpio_clock": int,
@@ -39,7 +40,7 @@ class PlasmaAPA102(Plasma):
         Plasma.__init__(self, pixel_count)
 
     def _write_byte(self, byte):
-        for x in range(8):
+        for _x in range(8):
             self._gpio.output(self._gpio_data, byte & 0b10000000)
             self._gpio.output(self._gpio_clock, 1)
             time.sleep(0)
@@ -51,7 +52,7 @@ class PlasmaAPA102(Plasma):
         # Emit exactly enough clock pulses to latch the small dark die APA102s which are weird
         # for some reason it takes 36 clocks, the other IC takes just 4 (number of pixels/2)
         self._gpio.output(self._gpio_data, 0)
-        for x in range(36):
+        for _x in range(36):
             self._gpio.output(self._gpio_clock, 1)
             time.sleep(0)
             self._gpio.output(self._gpio_clock, 0)
@@ -59,7 +60,7 @@ class PlasmaAPA102(Plasma):
 
     def _sof(self):
         self._gpio.output(self._gpio_data, 0)
-        for x in range(32):
+        for _x in range(32):
             self._gpio.output(self._gpio_clock, 1)
             time.sleep(0.)
             self._gpio.output(self._gpio_clock, 0)

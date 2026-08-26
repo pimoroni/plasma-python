@@ -1,10 +1,11 @@
 """Combine multiple LED strip types into a single logical strip."""
+import contextlib
 import pathlib
 
 import yaml
 
 
-class PlasmaMatrix():
+class PlasmaMatrix:
     """Combine multiple LED strip types into a single logical strip."""
 
     def __init__(self, config_file=None):
@@ -21,7 +22,8 @@ class PlasmaMatrix():
         if not config_file.is_file():
             raise ValueError(f"Could not find {config_file}")
 
-        self._config = yaml.safe_load(open(config_file, "r"))
+        with open(config_file) as config:
+            self._config = yaml.safe_load(config)
 
         for required in ("pixels", "devices"):
             if required not in self._config:
@@ -40,20 +42,14 @@ class PlasmaMatrix():
 
             del output_options["type"]
 
-            try:
+            with contextlib.suppress(KeyError):
                 del output_options["enabled"]
-            except KeyError:
-                pass
 
-            try:
+            with contextlib.suppress(KeyError):
                 del output_options["pixels"]
-            except KeyError:
-                pass
 
-            try:
+            with contextlib.suppress(KeyError):
                 del output_options["offset"]
-            except KeyError:
-                pass
 
             output_device = self.get_output_device(output_type)
 
@@ -79,11 +75,11 @@ class PlasmaMatrix():
         Otherwise returns first device of that type.
 
         """
-        if index in self._devices.keys():
+        if index in self._devices:
             return self._devices[index].get('device')
 
         if isinstance(index, str):
-            for n, d in self._devices.items():
+            for d in self._devices.values():
                 if d.get('type') == index:
                     return d.get('device')
 
@@ -109,7 +105,7 @@ class PlasmaMatrix():
 
     def set_all(self, r, g, b, brightness=None):
         """Set the RGB value and optionally brightness of all pixels."""
-        for n, d in self._devices.items():
+        for d in self._devices.values():
             d.get('device').set_all(r, g, b, brightness=brightness)
 
     def set_sequence(self, sequence):
@@ -126,7 +122,7 @@ class PlasmaMatrix():
 
     def get_pixel(self, x):
         """Get the RGB and brightness value of a specific pixel."""
-        for n, d in self._devices.items():
+        for d in self._devices.values():
             device = d.get('device')
             offset = d.get('offset')
             count = device.get_pixel_count()
@@ -136,7 +132,7 @@ class PlasmaMatrix():
 
     def set_pixel(self, x, r, g, b, brightness=None):
         """Set the RGB value, and optionally brightness, of a single pixel."""
-        for n, d in self._devices.items():
+        for d in self._devices.values():
             device = d.get('device')
             offset = d.get('offset')
             count = device.get_pixel_count()
@@ -151,5 +147,5 @@ class PlasmaMatrix():
         from the buffer starting from the specified offset.
 
         """
-        for n, d in self._devices.items():
+        for d in self._devices.values():
             d.get('device').show()

@@ -1,5 +1,5 @@
 """Test Plasma GPIO (APA102 wrapper) initialisation."""
-import mock
+from unittest import mock
 
 
 def test_legacy_gpio_setup(GPIO):

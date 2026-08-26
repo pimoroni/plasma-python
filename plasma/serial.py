@@ -1,4 +1,6 @@
 """Serial class for Plasma light devices over USB Serial/UART."""
+from typing import ClassVar
+
 from serial import Serial
 
 from .core import Plasma
@@ -9,7 +11,7 @@ class PlasmaSerial(Plasma):
 
     name = "Serial"
 
-    options = {
+    options: ClassVar = {
         'pixel_count': int,
         "port": str
     }

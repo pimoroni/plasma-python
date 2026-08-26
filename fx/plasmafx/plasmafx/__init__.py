@@ -2,7 +2,7 @@
 import time
 
 
-class Sequence(object):
+class Sequence:
     """PlasmaFX Sequence.
 
     A PlasmaFX sequence is responsible for a sequence of
@@ -26,8 +26,7 @@ class Sequence(object):
     def __iter__(self):
         self.update_pixels()
 
-        for index, pixel in enumerate(self._pixels):
-            yield index, pixel
+        yield from enumerate(self._pixels)
 
     def set_plugin(self, offset, plugin):
         """Set plugin for light at index."""
@@ -47,5 +46,4 @@ class Sequence(object):
         """
         self.update_pixels(delta)
 
-        for index, pixel in enumerate(self._pixels):
-            yield index, pixel
+        yield from enumerate(self._pixels)

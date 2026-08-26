@@ -28,13 +28,13 @@ while True:
     offset = (math.sin(delta * SCAN_SPEED) + 1) / 2
 
     # Use offset to pick the right colour from the hue wheel
-    hue = int(round(offset * 360))
+    hue = round(offset * 360)
 
     # Maximum number basex on NUM_PIXELS
     max_val = plasma.get_pixel_count() - 1
 
     # Now we generate a value from 0 to max_val
-    offset = int(round(offset * max_val))
+    offset = round(offset * max_val)
 
     for x in range(plasma.get_pixel_count()):
         sat = 1.0

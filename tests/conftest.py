@@ -6,8 +6,8 @@ that might otherwise have runtime side-effects.
 import pathlib
 import sys
 import tempfile
+from unittest import mock
 
-import mock
 import pytest
 
 
@@ -21,10 +21,7 @@ def cleanup_plasma():
     """
 
     yield None
-    to_delete = []
-    for module in sys.modules:
-        if module.startswith('plasma'):
-            to_delete.append(module)
+    to_delete = [module for module in sys.modules if module.startswith('plasma')]
 
     for module in to_delete:
         del sys.modules[module]
@@ -69,8 +66,8 @@ def rpi_ws281x():
 @pytest.fixture(scope='function', autouse=False)
 def config_file():
     """Temporary config file."""
-    file = tempfile.NamedTemporaryFile(delete=False)
-    file.write(b"""pixels: 100
+    with tempfile.NamedTemporaryFile(delete=False) as file:
+        file.write(b"""pixels: 100
 devices:
     TABLE:
         type: WS281X
@@ -90,26 +87,24 @@ devices:
         offset: 60
         port: /dev/ttyAMA0
 """)
-    file.flush()
+        file.flush()
     yield pathlib.Path(file.name)
-    file.close()
 
 
 
 @pytest.fixture(scope='function', autouse=False)
 def config_file_default_pixels_and_offset():
     """Temporary config file."""
-    file = tempfile.NamedTemporaryFile(delete=False)
-    file.write(b"""pixels: 100
+    with tempfile.NamedTemporaryFile(delete=False) as file:
+        file.write(b"""pixels: 100
 devices:
     TABLE:
         type: APA102
         gpio_data: 10
         gpio_clock: 11
 """)
-    file.flush()
+        file.flush()
     yield pathlib.Path(file.name)
-    file.close()
 
 
 @pytest.fixture(scope='function', autouse=False)

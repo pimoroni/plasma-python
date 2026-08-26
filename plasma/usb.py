@@ -5,4 +5,3 @@ from .serial import PlasmaSerial
 class PlasmaUSB(PlasmaSerial):
     """Deprecated PlasmaUSB output device."""
 
-    pass

@@ -1,5 +1,5 @@
 """Test Plasma APA102 initialisation."""
-import mock
+from unittest import mock
 
 
 def test_apa102_setup(GPIO):

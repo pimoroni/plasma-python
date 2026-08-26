@@ -1,7 +1,7 @@
 """Plasma: Light FX Sequencer - Plugin base class."""
 
 
-class Plugin(object):
+class Plugin:
     """PlasmaFX Plugin.
 
     A PlasmaFX plugin is responsible for the 4 lights on

@@ -1,4 +1,6 @@
 """Class for Plasma light devices in the WS281X/SK6812 family."""
+from typing import ClassVar
+
 from .core import Plasma
 
 
@@ -7,7 +9,7 @@ class PlasmaWS281X(Plasma):
 
     name = "WS281X"
 
-    options = {
+    options: ClassVar = {
         'pixel_count': int,
         "gpio_pin": int,
         "strip_type": str,
@@ -45,7 +47,7 @@ class PlasmaWS281X(Plasma):
         strip_type = strip_types[strip_type]
 
         if channel is None:
-            if gpio_pin in [13]:
+            if gpio_pin == 13:
                 channel = 1
             elif gpio_pin in [12, 18]:
                 channel = 0
@@ -58,7 +60,7 @@ class PlasmaWS281X(Plasma):
     def show(self):
         """Output the buffer."""
         for i in range(self._strip.numPixels()):
-            r, g, b, brightness = self._pixels[i]
+            r, g, b, _brightness = self._pixels[i]
             self._strip.setPixelColorRGB(i, r, g, b)
 
         self._strip.show()
